@@ -25,24 +25,35 @@ router.post('/import', upload.single('file'), async (req, res) => {
                 // Normalize keys to lowercase to be safe
                 const normalizedRow = {};
                 for (const key in row) {
-                    // Remove quotes and trim
-                    const cleanKey = key.replace(/['"]/g, '').toLowerCase().trim();
+                    // Remove quotes, trim, and remove BOM
+                    const cleanKey = key.replace(/^[\uFEFF]/, '').replace(/['"]/g, '').toLowerCase().trim();
                     normalizedRow[cleanKey] = row[key];
                 }
 
+                // Helper to clean phone number
+                const cleanPhone = (val) => {
+                    if (!val) return null;
+                    let str = String(val).replace(/\D/g, ''); // Remove non-digits
+                    if (str.startsWith('20')) str = str.slice(2); // Remove country code
+                    if (str.startsWith('01') && str.length === 11) return str;
+                    return null;
+                };
+
                 // Map fields based on known CSV headers
-                let phoneNumber =
+                let rawPhone =
                     normalizedRow['personalization.sessionstate.phone'] ||
                     normalizedRow['phone_number'] ||
                     normalizedRow['phone'] ||
                     normalizedRow['mobile'];
 
+                let phoneNumber = cleanPhone(rawPhone);
+
                 // Fallback: Search for a value that looks like an Egyptian phone number
                 if (!phoneNumber) {
-                    const phoneRegex = /^(01\d{9})$/;
                     for (const val of Object.values(row)) {
-                        if (val && phoneRegex.test(String(val).trim())) {
-                            phoneNumber = String(val).trim();
+                        const cleaned = cleanPhone(val);
+                        if (cleaned) {
+                            phoneNumber = cleaned;
                             break;
                         }
                     }
