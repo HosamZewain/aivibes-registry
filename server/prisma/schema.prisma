@@ -3,13 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model PreRegisteredAttendee {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  phoneNumber String
+  id          Int      @id @default(autoincrement())
+  phoneNumber String   @unique
   fullName    String?
   email       String?
   titleRole   String?
@@ -18,7 +18,7 @@ model PreRegisteredAttendee {
 }
 
 model Registration {
-  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  id                   Int      @id @default(autoincrement())
   phoneNumber          String
   fullName             String
   email                String
@@ -31,6 +31,6 @@ model Registration {
   interestedInSessions String?  // JSON string or comma-separated
   projectTitle         String?
   howDidYouHear        String?
-  qrCodeValue          String
+  qrCodeValue          String   @unique
   createdAt            DateTime @default(now())
 }

@@ -98,7 +98,7 @@ router.get('/check', async (req, res) => {
     }
 
     try {
-        const registration = await prisma.registration.findFirst({
+        const registration = await prisma.registration.findUnique({
             where: { qrCodeValue: token },
         });
 

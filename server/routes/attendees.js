@@ -105,33 +105,22 @@ router.post('/import', upload.single('file'), async (req, res) => {
                     normalizedRow['personalization.sessionstate.position'];
 
                 try {
-                    // MongoDB standalone doesn't support transactions (required by upsert)
-                    // So we do manual check + create/update
-                    const existing = await prisma.preRegisteredAttendee.findFirst({
-                        where: { phoneNumber: String(phoneNumber) }
+                    await prisma.preRegisteredAttendee.upsert({
+                        where: { phoneNumber: String(phoneNumber) },
+                        update: {
+                            fullName: fullName || null,
+                            email: email || null,
+                            titleRole: titleRole || null,
+                            sourceRow: JSON.stringify(row),
+                        },
+                        create: {
+                            phoneNumber: String(phoneNumber),
+                            fullName: fullName || null,
+                            email: email || null,
+                            titleRole: titleRole || null,
+                            sourceRow: JSON.stringify(row),
+                        },
                     });
-
-                    if (existing) {
-                        await prisma.preRegisteredAttendee.updateMany({
-                            where: { phoneNumber: String(phoneNumber) },
-                            data: {
-                                fullName: fullName || null,
-                                email: email || null,
-                                titleRole: titleRole || null,
-                                sourceRow: JSON.stringify(row),
-                            }
-                        });
-                    } else {
-                        await prisma.preRegisteredAttendee.create({
-                            data: {
-                                phoneNumber: String(phoneNumber),
-                                fullName: fullName || null,
-                                email: email || null,
-                                titleRole: titleRole || null,
-                                sourceRow: JSON.stringify(row),
-                            }
-                        });
-                    }
                     successCount++;
                 } catch (e) {
                     console.error(`Row ${index + 1}: DB Error for ${phoneNumber}:`, e.message);
@@ -169,7 +158,7 @@ router.get('/search', async (req, res) => {
     }
 
     try {
-        const attendee = await prisma.preRegisteredAttendee.findFirst({
+        const attendee = await prisma.preRegisteredAttendee.findUnique({
             where: { phoneNumber: String(phone) },
         });
 
@@ -214,7 +203,7 @@ router.post('/attendees', async (req, res) => {
             return res.status(400).json({ error: 'Phone number is required' });
         }
 
-        const existing = await prisma.preRegisteredAttendee.findFirst({
+        const existing = await prisma.preRegisteredAttendee.findUnique({
             where: { phoneNumber }
         });
 
