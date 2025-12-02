@@ -107,12 +107,12 @@ router.post('/import', upload.single('file'), async (req, res) => {
                 try {
                     // MongoDB standalone doesn't support transactions (required by upsert)
                     // So we do manual check + create/update
-                    const existing = await prisma.preRegisteredAttendee.findUnique({
+                    const existing = await prisma.preRegisteredAttendee.findFirst({
                         where: { phoneNumber: String(phoneNumber) }
                     });
 
                     if (existing) {
-                        await prisma.preRegisteredAttendee.update({
+                        await prisma.preRegisteredAttendee.updateMany({
                             where: { phoneNumber: String(phoneNumber) },
                             data: {
                                 fullName: fullName || null,
@@ -169,7 +169,7 @@ router.get('/search', async (req, res) => {
     }
 
     try {
-        const attendee = await prisma.preRegisteredAttendee.findUnique({
+        const attendee = await prisma.preRegisteredAttendee.findFirst({
             where: { phoneNumber: String(phone) },
         });
 
@@ -214,7 +214,7 @@ router.post('/attendees', async (req, res) => {
             return res.status(400).json({ error: 'Phone number is required' });
         }
 
-        const existing = await prisma.preRegisteredAttendee.findUnique({
+        const existing = await prisma.preRegisteredAttendee.findFirst({
             where: { phoneNumber }
         });
 

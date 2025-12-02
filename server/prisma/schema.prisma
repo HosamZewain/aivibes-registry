@@ -9,7 +9,7 @@ datasource db {
 
 model PreRegisteredAttendee {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  phoneNumber String   @unique
+  phoneNumber String
   fullName    String?
   email       String?
   titleRole   String?
@@ -31,6 +31,6 @@ model Registration {
   interestedInSessions String?  // JSON string or comma-separated
   projectTitle         String?
   howDidYouHear        String?
-  qrCodeValue          String   @unique
+  qrCodeValue          String
   createdAt            DateTime @default(now())
 }
