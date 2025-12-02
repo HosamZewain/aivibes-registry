@@ -176,7 +176,7 @@ router.put('/attendees/:id', async (req, res) => {
         const { phoneNumber, fullName, email } = req.body;
 
         const attendee = await prisma.preRegisteredAttendee.update({
-            where: { id: parseInt(id) },
+            where: { id },
             data: {
                 phoneNumber,
                 fullName,
@@ -196,7 +196,7 @@ router.delete('/attendees/:id', async (req, res) => {
     try {
         const { id } = req.params;
         await prisma.preRegisteredAttendee.delete({
-            where: { id: parseInt(id) }
+            where: { id }
         });
         res.json({ success: true });
     } catch (error) {
