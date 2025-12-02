@@ -298,8 +298,8 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => setActiveTab('imports')}
                         className={`pb-2 px-4 font-semibold transition ${activeTab === 'imports'
-                                ? 'border-b-2 border-blue-600 text-blue-600'
-                                : 'text-gray-500 hover:text-gray-700'
+                            ? 'border-b-2 border-blue-600 text-blue-600'
+                            : 'text-gray-500 hover:text-gray-700'
                             }`}
                     >
                         <Users className="inline w-5 h-5 mr-2" />
@@ -308,8 +308,8 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => setActiveTab('registrations')}
                         className={`pb-2 px-4 font-semibold transition ${activeTab === 'registrations'
-                                ? 'border-b-2 border-green-600 text-green-600'
-                                : 'text-gray-500 hover:text-gray-700'
+                            ? 'border-b-2 border-green-600 text-green-600'
+                            : 'text-gray-500 hover:text-gray-700'
                             }`}
                     >
                         <UserCheck className="inline w-5 h-5 mr-2" />
@@ -339,6 +339,9 @@ export default function AdminDashboard() {
                                                     Email
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Title
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Created At
                                                 </th>
                                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -349,7 +352,7 @@ export default function AdminDashboard() {
                                         <tbody className="bg-white divide-y divide-gray-200">
                                             {filteredImports.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                                                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                                                         No pre-registered attendees found
                                                     </td>
                                                 </tr>
@@ -364,6 +367,9 @@ export default function AdminDashboard() {
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                                             {attendee.email || '-'}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                                            {attendee.titleRole || '-'}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                             {new Date(attendee.createdAt).toLocaleString()}
@@ -439,8 +445,8 @@ export default function AdminDashboard() {
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                             <span
                                                                 className={`px-2 py-1 rounded-full text-xs font-medium ${reg.attendeeMode === 'hackathon_participant'
-                                                                        ? 'bg-purple-100 text-purple-800'
-                                                                        : 'bg-blue-100 text-blue-800'
+                                                                    ? 'bg-purple-100 text-purple-800'
+                                                                    : 'bg-blue-100 text-blue-800'
                                                                     }`}
                                                             >
                                                                 {reg.attendeeMode === 'hackathon_participant' ? 'Hackathon' : 'Sessions'}

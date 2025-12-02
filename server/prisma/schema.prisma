@@ -12,6 +12,7 @@ model PreRegisteredAttendee {
   phoneNumber String   @unique
   fullName    String?
   email       String?
+  titleRole   String?
   sourceRow   String?  // Stored as JSON string
   createdAt   DateTime @default(now())
 }

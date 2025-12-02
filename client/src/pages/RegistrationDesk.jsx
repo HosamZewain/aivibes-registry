@@ -27,6 +27,7 @@ export default function RegistrationDesk() {
                 fullName: res.data.attendee.fullName || '',
                 email: res.data.attendee.email || '',
                 phoneNumber: res.data.attendee.phoneNumber,
+                titleRole: res.data.attendee.titleRole || '',
             });
             setStep(2);
         } catch (err) {

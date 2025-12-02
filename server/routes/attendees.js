@@ -57,6 +57,16 @@ router.post('/import', upload.single('file'), async (req, res) => {
                     normalizedRow['personalization.sessionstate.email'] ||
                     normalizedRow['email'];
 
+                const titleRole =
+                    normalizedRow['personalization.sessionstate.title'] ||
+                    normalizedRow['personalization.sessionstate.role'] ||
+                    normalizedRow['personalization.sessionstate.job'] ||
+                    normalizedRow['personalization.sessionstate.position'] ||
+                    normalizedRow['title'] ||
+                    normalizedRow['role'] ||
+                    normalizedRow['job'] ||
+                    normalizedRow['position'];
+
                 if (!phoneNumber) {
                     console.log(`Row ${index + 1}: No phone number found. Keys: ${Object.keys(normalizedRow).join(', ')}`);
                     errorCount++;
@@ -69,12 +79,14 @@ router.post('/import', upload.single('file'), async (req, res) => {
                         update: {
                             fullName: fullName,
                             email: email,
+                            titleRole: titleRole,
                             sourceRow: JSON.stringify(row),
                         },
                         create: {
                             phoneNumber: String(phoneNumber),
                             fullName: fullName,
                             email: email,
+                            titleRole: titleRole,
                             sourceRow: JSON.stringify(row),
                         },
                     });
