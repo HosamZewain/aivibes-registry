@@ -20,41 +20,54 @@ router.post('/import', upload.single('file'), async (req, res) => {
         .on('end', async () => {
             let successCount = 0;
             let errorCount = 0;
+            const errors = [];
 
             for (const [index, row] of results.entries()) {
                 // Normalize keys to lowercase to be safe
                 const normalizedRow = {};
                 for (const key in row) {
                     // Remove quotes, trim, and remove BOM
-                    const cleanKey = key.replace(/^[\uFEFF]/, '').replace(/['"]/g, '').toLowerCase().trim();
+                    const cleanKey = key.replace(/^[\uFEFF\uFFFE]/, '').replace(/['"]/g, '').toLowerCase().trim();
                     normalizedRow[cleanKey] = row[key];
                 }
 
-                // Helper to clean phone number
+                // Comprehensive phone number cleaner
                 const cleanPhone = (val) => {
                     if (!val) return null;
-                    let str = String(val).replace(/\D/g, ''); // Remove non-digits
-                    if (str.startsWith('20')) str = str.slice(2); // Remove country code
-                    if (str.startsWith('01') && str.length === 11) return str;
+                    let str = String(val).trim();
+
+                    // Remove all non-digit characters
+                    str = str.replace(/\D/g, '');
+
+                    // Handle different formats
+                    if (str.length === 13 && str.startsWith('2001')) {
+                        // +20 01XXXXXXXXX format
+                        str = str.slice(2);
+                    } else if (str.length === 12 && str.startsWith('201')) {
+                        // 20 01XXXXXXXXX format  
+                        str = str.slice(2);
+                    } else if (str.length === 10 && str.startsWith('1')) {
+                        // 1XXXXXXXXX format (missing leading 0)
+                        str = '0' + str;
+                    }
+
+                    // Validate: must be 11 digits starting with 01
+                    if (str.length === 11 && str.startsWith('01')) {
+                        return str;
+                    }
+
                     return null;
                 };
 
-                // Map fields based on known CSV headers
-                let rawPhone =
-                    normalizedRow['personalization.sessionstate.phone'] ||
+                // Try to find phone number from multiple possible columns
+                let rawPhone = normalizedRow['phone'] ||
+                    normalizedRow['mobile'] ||
                     normalizedRow['phone_number'] ||
-                    normalizedRow['phone'] ||
-                    normalizedRow['mobile'];
-
-                // DEBUG LOGGING
-                if (index < 3) {
-                    console.log(`Row ${index}: Keys found:`, Object.keys(normalizedRow));
-                    console.log(`Row ${index}: Raw Phone:`, rawPhone);
-                }
+                    normalizedRow['personalization.sessionstate.phone'];
 
                 let phoneNumber = cleanPhone(rawPhone);
 
-                // Fallback: Search for a value that looks like an Egyptian phone number
+                // Fallback: scan all values for something that looks like a phone
                 if (!phoneNumber) {
                     for (const val of Object.values(row)) {
                         const cleaned = cleanPhone(val);
@@ -65,51 +78,68 @@ router.post('/import', upload.single('file'), async (req, res) => {
                     }
                 }
 
-                const fullName =
-                    normalizedRow['personalization.sessionstate.name'] ||
-                    normalizedRow['full_name'] ||
-                    normalizedRow['name'];
-
-                const email =
-                    normalizedRow['personalization.sessionstate.email'] ||
-                    normalizedRow['email'];
-
-                const titleRole =
-                    normalizedRow['personalization.sessionstate.title'] ||
-                    normalizedRow['personalization.sessionstate.role'] ||
-                    normalizedRow['personalization.sessionstate.job'] ||
-                    normalizedRow['personalization.sessionstate.position'] ||
-                    normalizedRow['title'] ||
-                    normalizedRow['role'] ||
-                    normalizedRow['job'] ||
-                    normalizedRow['position'];
-
                 if (!phoneNumber) {
-                    console.log(`Row ${index + 1}: No phone number found. Keys: ${Object.keys(normalizedRow).join(', ')}`);
+                    errors.push({
+                        row: index + 1,
+                        reason: 'No valid Egyptian phone number found',
+                        keys: Object.keys(normalizedRow),
+                        phoneValue: rawPhone,
+                        actualPhoneColumnValue: normalizedRow['phone']
+                    });
                     errorCount++;
                     continue;
                 }
 
+                const fullName = normalizedRow['name'] ||
+                    normalizedRow['full_name'] ||
+                    normalizedRow['personalization.sessionstate.name'];
+
+                const email = normalizedRow['email'] ||
+                    normalizedRow['personalization.sessionstate.email'];
+
+                const titleRole = normalizedRow['job'] ||
+                    normalizedRow['position'] ||
+                    normalizedRow['title'] ||
+                    normalizedRow['role'] ||
+                    normalizedRow['personalization.sessionstate.job'] ||
+                    normalizedRow['personalization.sessionstate.position'];
+
                 try {
-                    await prisma.preRegisteredAttendee.upsert({
-                        where: { phoneNumber: String(phoneNumber) },
-                        update: {
-                            fullName: fullName,
-                            email: email,
-                            titleRole: titleRole,
-                            sourceRow: JSON.stringify(row),
-                        },
-                        create: {
-                            phoneNumber: String(phoneNumber),
-                            fullName: fullName,
-                            email: email,
-                            titleRole: titleRole,
-                            sourceRow: JSON.stringify(row),
-                        },
+                    // MongoDB standalone doesn't support transactions (required by upsert)
+                    // So we do manual check + create/update
+                    const existing = await prisma.preRegisteredAttendee.findUnique({
+                        where: { phoneNumber: String(phoneNumber) }
                     });
+
+                    if (existing) {
+                        await prisma.preRegisteredAttendee.update({
+                            where: { phoneNumber: String(phoneNumber) },
+                            data: {
+                                fullName: fullName || null,
+                                email: email || null,
+                                titleRole: titleRole || null,
+                                sourceRow: JSON.stringify(row),
+                            }
+                        });
+                    } else {
+                        await prisma.preRegisteredAttendee.create({
+                            data: {
+                                phoneNumber: String(phoneNumber),
+                                fullName: fullName || null,
+                                email: email || null,
+                                titleRole: titleRole || null,
+                                sourceRow: JSON.stringify(row),
+                            }
+                        });
+                    }
                     successCount++;
                 } catch (e) {
                     console.error(`Row ${index + 1}: DB Error for ${phoneNumber}:`, e.message);
+                    errors.push({
+                        row: index + 1,
+                        reason: 'Database error: ' + e.message,
+                        phone: phoneNumber
+                    });
                     errorCount++;
                 }
             }
@@ -117,7 +147,17 @@ router.post('/import', upload.single('file'), async (req, res) => {
             // Cleanup file
             fs.unlinkSync(req.file.path);
 
-            res.json({ message: 'Import completed', success: successCount, errors: errorCount });
+            // Log errors for debugging
+            if (errors.length > 0) {
+                console.log('Import errors:', JSON.stringify(errors.slice(0, 5), null, 2));
+            }
+
+            res.json({
+                message: 'Import completed',
+                success: successCount,
+                errors: errorCount,
+                sampleErrors: errors.slice(0, 3)
+            });
         });
 });
 
