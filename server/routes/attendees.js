@@ -46,6 +46,12 @@ router.post('/import', upload.single('file'), async (req, res) => {
                     normalizedRow['phone'] ||
                     normalizedRow['mobile'];
 
+                // DEBUG LOGGING
+                if (index < 3) {
+                    console.log(`Row ${index}: Keys found:`, Object.keys(normalizedRow));
+                    console.log(`Row ${index}: Raw Phone:`, rawPhone);
+                }
+
                 let phoneNumber = cleanPhone(rawPhone);
 
                 // Fallback: Search for a value that looks like an Egyptian phone number
