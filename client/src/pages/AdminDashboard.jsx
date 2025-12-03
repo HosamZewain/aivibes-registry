@@ -85,15 +85,27 @@ export default function AdminDashboard() {
         setIsModalOpen(true);
     };
 
+    // Delete a pre‑registered attendee
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this attendee?')) return;
-
         try {
             await api.delete(`/attendees/${id}`);
             fetchData();
         } catch (error) {
             console.error(error);
             alert('Failed to delete attendee');
+        }
+    };
+
+    // Delete a registered attendee (from the Registrations tab)
+    const handleDeleteRegistration = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this registration?')) return;
+        try {
+            await api.delete(`/registrations/${id}`);
+            fetchData();
+        } catch (error) {
+            console.error(error);
+            alert('Failed to delete registration');
         }
     };
 
@@ -421,12 +433,13 @@ export default function AdminDashboard() {
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Created At
                                                 </th>
+                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
                                             {filteredRegistrations.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                                                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                                                         No registrations found
                                                     </td>
                                                 </tr>
@@ -457,6 +470,11 @@ export default function AdminDashboard() {
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                             {new Date(reg.createdAt).toLocaleString()}
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                            <button onClick={() => handleDeleteRegistration(reg.id)} className="text-red-600 hover:text-red-900">
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 ))

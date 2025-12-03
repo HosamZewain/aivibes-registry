@@ -133,4 +133,18 @@ router.get('/registrations', async (req, res) => {
     }
 });
 
+// DELETE a registration by ID
+router.delete('/registrations/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await prisma.registration.delete({
+            where: { id: Number(id) },
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete registration error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;
